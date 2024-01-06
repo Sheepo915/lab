@@ -1,0 +1,53 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model EmailValidationStatus {
+  emailValidationStatusId Int        @id @unique(map: "email_validation_status_id_UNIQUE") @map("email_validation_status_id")
+  status                  String     @default("FALSE") @db.VarChar(10)
+  userAuth                UserAuth[]
+
+  @@map("email_validation_status")
+}
+
+model UserAccount {
+  userId      Int       @id @unique(map: "user_id_UNIQUE") @default(autoincrement()) @map("user_id")
+  username    String    @unique(map: "username_UNIQUE") @db.VarChar(100)
+  firstName   String    @map("first_name") @db.VarChar(100)
+  lastName    String    @map("last_name") @db.VarChar(100)
+  gender      String    @db.Char(1)
+  dateOfBirth DateTime  @map("date_of_birth") @db.Date
+  profilePic  String?   @map("profile_pic") @db.LongText
+  userAuth    UserAuth?
+
+  @@map("user_account")
+}
+
+model UserAuth {
+  userId                  Int                   @id @unique(map: "user_id_UNIQUE") @map("user_id")
+  email                   String                @unique(map: "email_UNIQUE") @db.VarChar(255)
+  passwordHash            String                @map("password_hash") @db.VarChar(255)
+  emailValidationStatusId Int                   @map("email_validation_status_id")
+  refreshToken            RefreshTokens[]
+  emailValidationStatus   EmailValidationStatus @relation(fields: [emailValidationStatusId], references: [emailValidationStatusId], onDelete: Cascade, onUpdate: NoAction, map: "email_validation_status_id")
+  userAccount             UserAccount           @relation(fields: [userId], references: [userId], map: "user_account")
+
+  @@index([emailValidationStatusId], map: "email_validation_status_id_idx")
+  @@index([emailValidationStatusId], map: "email_validation_status_idx")
+  @@map("user_auth")
+}
+
+model RefreshTokens {
+  refreshTokenId Int    @id @unique @default(autoincrement())
+  userId         Int?
+  refreshToken   String @map("refresh_token") @db.Text
+
+  UserAuth UserAuth? @relation(fields: [userId], references: [userId])
+
+  @@map("refresh_tokens")
+}
